@@ -11,139 +11,173 @@
 
 using namespace std;
 
-// ¶¨Òå TextQuery Àà£¬ÓÃÓÚÖ´ĞĞÎÄ±¾²éÑ¯²Ù×÷
+// KMPç®—æ³•ï¼šæ„å»ºéƒ¨åˆ†åŒ¹é…è¡¨ï¼ˆLPSæ•°ç»„ï¼‰
+// LPSï¼ˆLongest Prefix Suffixï¼‰æ•°ç»„ç”¨äºè®°å½•æ¨¡å¼ä¸²æ¯ä¸ªä½ç½®çš„æœ€é•¿å‰ç¼€å’Œåç¼€çš„åŒ¹é…é•¿åº¦
+vector<int> build_kmp_table(const string& pattern) {
+    vector<int> lps(pattern.size(), 0);  // å­˜å‚¨æ¯ä¸ªä½ç½®çš„å‰ç¼€åç¼€åŒ¹é…é•¿åº¦
+    int j = 0;  // æ¨¡å¼ä¸²çš„å½“å‰åŒ¹é…ä½ç½®
+
+    // ä»ç¬¬äºŒä¸ªå­—ç¬¦å¼€å§‹è®¡ç®—LPSæ•°ç»„
+    for (int i = 1; i < pattern.size(); ++i) {
+        // å¦‚æœå­—ç¬¦ä¸åŒ¹é…ï¼Œå›æº¯åˆ°lpsæ•°ç»„ä¸­çš„å‰ä¸€ä¸ªä½ç½®
+        while (j > 0 && pattern[i] != pattern[j]) {
+            j = lps[j - 1];  // é€šè¿‡å›é€€ï¼Œå°è¯•æ‰¾åˆ°æ–°çš„åŒ¹é…ä½ç½®
+        }
+        if (pattern[i] == pattern[j]) {
+            ++j;  // åŒ¹é…æˆåŠŸï¼Œæ‰©å±•åŒ¹é…é•¿åº¦
+        }
+        lps[i] = j;  // æ›´æ–°å½“å‰å­—ç¬¦çš„å‰ç¼€åç¼€åŒ¹é…é•¿åº¦
+    }
+    return lps;
+}
+
+// KMPç®—æ³•ï¼šåœ¨æ–‡æœ¬ä¸­æŸ¥æ‰¾æ¨¡å¼ä¸²çš„æ‰€æœ‰ä½ç½®
+vector<int> kmp_search(const string& text, const string& pattern) {
+    vector<int> lps = build_kmp_table(pattern);  // è·å–æ¨¡å¼ä¸²çš„LPSæ•°ç»„
+    vector<int> positions;  // å­˜å‚¨æ¨¡å¼ä¸²åŒ¹é…åˆ°çš„ä½ç½®
+
+    int j = 0;  // æ¨¡å¼ä¸²çš„å½“å‰åŒ¹é…ä½ç½®
+
+    // éå†æ–‡æœ¬å­—ç¬¦ä¸²
+    for (int i = 0; i < text.size(); ++i) {
+        // å¦‚æœå­—ç¬¦ä¸åŒ¹é…ï¼Œå›é€€åˆ°LPSæ•°ç»„ä¸­çš„å‰ä¸€ä¸ªä½ç½®
+        while (j > 0 && text[i] != pattern[j]) {
+            j = lps[j - 1];  // é€šè¿‡å›é€€ï¼Œå°è¯•æ‰¾åˆ°æ–°çš„åŒ¹é…ä½ç½®
+        }
+        if (text[i] == pattern[j]) {
+            ++j;  // åŒ¹é…æˆåŠŸï¼Œæ‰©å±•åŒ¹é…é•¿åº¦
+        }
+        // å¦‚æœåŒ¹é…æˆåŠŸå¹¶ä¸”æ¨¡å¼ä¸²å·²ç»å®Œå…¨åŒ¹é…
+        if (j == pattern.size()) {
+            positions.push_back(i - j + 1);  // è®°å½•æ¨¡å¼ä¸²åŒ¹é…çš„èµ·å§‹ä½ç½®
+            j = lps[j - 1];  // ç»§ç»­æœç´¢ä¸‹ä¸€ä¸ªå¯èƒ½çš„åŒ¹é…
+        }
+    }
+    return positions;  // è¿”å›æ‰€æœ‰åŒ¹é…çš„ä½ç½®
+}
+
 class TextQuery {
 public:
-    typedef vector<string>::size_type line_no;  // ¶¨ÒåĞĞºÅÀàĞÍ
+    typedef vector<string>::size_type line_no;  // è¡Œå·ç±»å‹åˆ«å
 
-    // ¶ÁÈ¡ÎÄ¼şÄÚÈİµ½ÄÚ²¿´æ´¢
+    // è¯»å–æ–‡ä»¶å†…å®¹å¹¶æ„å»ºæ–‡ä»¶çš„æ–‡æœ¬æ•°æ®
     void read_file(wifstream& is) {
-        store_file(is);  // ´ÓÎÄ¼şÖĞ¶ÁÈ¡ÄÚÈİ
-        build_map();     // ¹¹½¨µ¥´ÊÓëĞĞºÅµÄÓ³Éä¹ØÏµ
+        store_file(is);  // ä»æ–‡ä»¶è¯»å–å†…å®¹
     }
 
-    // Ö´ĞĞ²éÑ¯£¬·µ»Ø°üº¬²éÑ¯µ¥´Ê³öÏÖĞĞºÅµÄ¼¯ºÏ
-    set<line_no> run_query(const string&) const;
+    // æ‰§è¡ŒæŸ¥è¯¢ï¼Œè¿”å›åŒ…å«æŸ¥è¯¢å•è¯å‡ºç°è¡Œå·çš„é›†åˆ
+    set<line_no> run_query(const string& query_word) const;
 
-    // »ñÈ¡Ä³Ò»ĞĞµÄÎÄ±¾ÄÚÈİ
+    // è·å–æŸä¸€è¡Œçš„æ–‡æœ¬å†…å®¹
     string text_line(line_no) const;
 
 private:
-    // Ë½ÓĞ³ÉÔ±º¯Êı
-    void store_file(wifstream&);  // ´æ´¢ÎÄ¼şÄÚÈİ
-    void build_map();            // ¹¹½¨µ¥´ÊÓëĞĞºÅµÄÓ³Éä¹ØÏµ
+    void store_file(wifstream&);  // å­˜å‚¨æ–‡ä»¶å†…å®¹
 
-    vector<string> lines_of_text;  // ´æ´¢ÎÄ±¾ÎÄ¼şµÄÃ¿Ò»ĞĞ
-    map<string, set<line_no>> word_map;  // ´æ´¢µ¥´ÊÓëĞĞºÅµÄÓ³Éä
+    vector<string> lines_of_text;  // å­˜å‚¨æ–‡æœ¬æ–‡ä»¶çš„æ¯ä¸€è¡Œ
 };
 
-// ¶ÁÈ¡ÎÄ¼şÄÚÈİ²¢´æ´¢µ½ lines_of_text ÖĞ
+// å­˜å‚¨æ–‡ä»¶å†…å®¹åˆ° lines_of_text ä¸­
 void TextQuery::store_file(wifstream& is) {
     wstring textline;
-    while (getline(is, textline)) {  // ÖğĞĞ¶ÁÈ¡ÎÄ¼şÄÚÈİ
-        // ½«¿í×Ö·û(wchar_t)×Ö·û´®×ª»»ÎªUTF-8±àÂëµÄÆÕÍ¨×Ö·û´®
+    // é€è¡Œè¯»å–æ–‡ä»¶å†…å®¹
+    while (getline(is, textline)) {
+        // å°†å®½å­—ç¬¦ï¼ˆwchar_tï¼‰å­—ç¬¦ä¸²è½¬æ¢ä¸ºUTF-8ç¼–ç çš„æ™®é€šå­—ç¬¦ä¸²
         string utf8_line(textline.begin(), textline.end());
-        lines_of_text.push_back(utf8_line);  // ½«Ã¿ĞĞÄÚÈİ´æÈë vector ÖĞ
+        lines_of_text.push_back(utf8_line);  // å°†æ¯è¡Œå†…å®¹å­˜å…¥ vector ä¸­
     }
 }
 
-// ¹¹½¨µ¥´ÊÓëĞĞºÅµÄÓ³Éä
-void TextQuery::build_map() {
-    for (line_no line_num = 0; line_num != lines_of_text.size(); line_num++) {
-        istringstream line(lines_of_text[line_num]);  // Ê¹ÓÃ stringstream ½âÎöÃ¿ĞĞ
-        string word;
-        while (line >> word) {  // ½«Ã¿ĞĞµÄÃ¿¸öµ¥´Ê²åÈë word_map
-            word_map[word].insert(line_num);  // word_map ´æ´¢µ¥´ÊÓëĞĞºÅµÄ¶ÔÓ¦¹ØÏµ
+// æŸ¥æ‰¾å¹¶è¿”å›æŸ¥è¯¢å•è¯åœ¨æ–‡æœ¬ä¸­å‡ºç°çš„è¡Œå·
+set<TextQuery::line_no> TextQuery::run_query(const string& query_word) const {
+    set<line_no> matching_lines;  // å­˜å‚¨åŒ…å«æŸ¥è¯¢å•è¯çš„è¡Œå·é›†åˆ
+
+    // éå†æ¯ä¸€è¡Œï¼Œä½¿ç”¨ KMP ç®—æ³•æŸ¥æ‰¾æŸ¥è¯¢å•è¯
+    for (line_no line_num = 0; line_num != lines_of_text.size(); ++line_num) {
+        const string& line = lines_of_text[line_num];  // å½“å‰è¡Œçš„æ–‡æœ¬
+        vector<int> positions = kmp_search(line, query_word);  // ä½¿ç”¨ KMP ç®—æ³•æŸ¥æ‰¾å•è¯
+        if (!positions.empty()) {
+            matching_lines.insert(line_num);  // å¦‚æœæ‰¾åˆ°äº†åŒ¹é…ï¼Œå°†è¡Œå·æ’å…¥é›†åˆ
         }
     }
+    return matching_lines;  // è¿”å›æ‰€æœ‰åŒ…å«æŸ¥è¯¢å•è¯çš„è¡Œå·
 }
 
-// ²éÑ¯Ö¸¶¨µ¥´Ê£¬·µ»Ø¸Ãµ¥´Ê³öÏÖµÄËùÓĞĞĞºÅ
-set<TextQuery::line_no> TextQuery::run_query(const string& query_word) const {
-    auto loc = word_map.find(query_word);  // ²éÕÒµ¥´ÊÔÚ map ÖĞµÄÎ»ÖÃ
-    if (loc != word_map.end()) {
-        return loc->second;  // ·µ»Ø¸Ãµ¥´ÊµÄĞĞºÅ¼¯ºÏ
-    }
-    return set<line_no>();  // Èç¹ûÃ»ÓĞÕÒµ½£¬·µ»Ø¿Õ¼¯ºÏ
-}
-
-// »ñÈ¡Ö¸¶¨ĞĞºÅµÄÎÄ±¾ÄÚÈİ
+// è·å–æŒ‡å®šè¡Œå·çš„æ–‡æœ¬å†…å®¹
 string TextQuery::text_line(line_no line) const {
     if (line < lines_of_text.size()) {
-        return lines_of_text[line];  // ·µ»ØÖ¸¶¨ĞĞºÅµÄÄÚÈİ
+        return lines_of_text[line];  // è¿”å›æŒ‡å®šè¡Œå·çš„æ–‡æœ¬å†…å®¹
     }
-    throw out_of_range("line number out of range");  // Èç¹ûĞĞºÅ³¬³ö·¶Î§£¬Å×³öÒì³£
+    throw out_of_range("line number out of range");  // å¦‚æœè¡Œå·è¶…å‡ºèŒƒå›´ï¼ŒæŠ›å‡ºå¼‚å¸¸
 }
 
-// Windows ÎÄ¼şÑ¡Ôñ¶Ô»°¿ò
+// æ‰“å¼€æ–‡ä»¶é€‰æ‹©å¯¹è¯æ¡†ï¼Œè¿”å›ç”¨æˆ·é€‰æ‹©çš„æ–‡ä»¶è·¯å¾„
 string open_file_dialog() {
-    OPENFILENAME ofn;       // ÎÄ¼şÑ¡Ôñ¿ò½á¹¹Ìå
-    wchar_t szFile[260];    // Ê¹ÓÃ¿í×Ö·ûÊı×é£¨wchar_t£©
+    OPENFILENAME ofn;
+    wchar_t szFile[260];
 
-    // ³õÊ¼»¯ OPENFILENAME ½á¹¹Ìå
+    // åˆå§‹åŒ–æ–‡ä»¶é€‰æ‹©æ¡†ç»“æ„ä½“
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = NULL;
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = sizeof(szFile) / sizeof(wchar_t);
-    ofn.lpstrFilter = L"Text Files\0*.TXT\0All Files\0*.*\0";  // Ê¹ÓÃ¿í×Ö·û³£Á¿
+    ofn.lpstrFilter = L"Text Files\0*.TXT\0All Files\0*.*\0";  // æ–‡ä»¶è¿‡æ»¤å™¨
     ofn.nFilterIndex = 1;
-    ofn.lpstrFile[0] = L'\0';  // ³õÊ¼»¯ÎÄ¼şÂ·¾¶Îª¿Õ
-    ofn.lpstrInitialDir = NULL;
-    ofn.lpstrTitle = L"Select a text file";  // Ê¹ÓÃ¿í×Ö·û³£Á¿
-    ofn.nFileOffset = 0;
-    ofn.nFileExtension = 0;
-    ofn.lpstrDefExt = L"txt";  // Ê¹ÓÃ¿í×Ö·û³£Á¿
+    ofn.lpstrFile[0] = L'\0';  // åˆå§‹åŒ–æ–‡ä»¶è·¯å¾„ä¸ºç©º
+    ofn.lpstrTitle = L"Select a text file";  // å¯¹è¯æ¡†æ ‡é¢˜
+    ofn.lpstrDefExt = L"txt";  // é»˜è®¤æ–‡ä»¶æ‰©å±•å
 
-    // ÏÔÊ¾ÎÄ¼şÑ¡Ôñ¶Ô»°¿ò
+    // æ˜¾ç¤ºæ–‡ä»¶é€‰æ‹©å¯¹è¯æ¡†
     if (GetOpenFileName(&ofn) == TRUE) {
-        return string(szFile, szFile + wcslen(szFile));  // ½«¿í×Ö·ûÊı×é×ª»»Îª std::string
+        return string(szFile, szFile + wcslen(szFile));  // è¿”å›æ–‡ä»¶è·¯å¾„
     }
-    return "";  // Èç¹ûÃ»ÓĞÑ¡ÔñÎÄ¼ş£¬·µ»Ø¿Õ×Ö·û´®
+    return "";  // å¦‚æœæœªé€‰æ‹©æ–‡ä»¶ï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²
 }
 
-// Éú³É¸´ÊıĞÎÊ½µÄµ¥´Ê£¨¸ù¾İµ¥´Ê³öÏÖ´ÎÊıÅĞ¶Ï£©
+// æ ¹æ®å•è¯å‡ºç°æ¬¡æ•°ç”Ÿæˆå¤æ•°å½¢å¼
 string make_plural(size_t cnt, const string& word, const string& words) {
-    return (cnt == 1) ? word : word + words;  // Èç¹û³öÏÖ´ÎÊıÎª1£¬²»¼Ó¸´ÊıĞÎÊ½£»·ñÔò¼ÓÉÏ¸´ÊıĞÎÊ½µÄ "s"
+    return (cnt == 1) ? word : word + words;  // å¦‚æœå‡ºç°æ¬¡æ•°ä¸º1ï¼Œä¸åŠ å¤æ•°å½¢å¼ï¼›å¦åˆ™åŠ ä¸Šå¤æ•°å½¢å¼çš„ "s"
 }
 
-// ´òÓ¡²éÑ¯½á¹û
+// æ‰“å°æŸ¥è¯¢ç»“æœ
 void print_results(const set<TextQuery::line_no>& locs, const string& sought, const TextQuery& file) {
-    typedef set<TextQuery::line_no> line_nums;  // ¶¨ÒåĞĞºÅ¼¯ºÏÀàĞÍ
-    line_nums::size_type size = locs.size();  // »ñÈ¡µ¥´Ê³öÏÖµÄĞĞÊı
-    cout << sought << " occurs " << size << " " << make_plural(size, "time", "s") << endl;  // Êä³ö²éÑ¯µÄµ¥´Ê¼°Æä³öÏÖ´ÎÊı
-    line_nums::const_iterator it = locs.begin();
-    for (; it != locs.end(); ++it) {  // Êä³öÃ¿ĞĞµÄÄÚÈİ
+    typedef set<TextQuery::line_no> line_nums;  // è¡Œå·é›†åˆç±»å‹
+    line_nums::size_type size = locs.size();  // è·å–å•è¯å‡ºç°çš„è¡Œæ•°
+    cout << sought << " occurs " << size << " " << make_plural(size, "time", "s") << endl;  // è¾“å‡ºæŸ¥è¯¢çš„å•è¯åŠå…¶å‡ºç°æ¬¡æ•°
+
+    // æ‰“å°åŒ…å«è¯¥å•è¯çš„æ¯ä¸€è¡Œå†…å®¹
+    for (auto it = locs.begin(); it != locs.end(); ++it) {
         cout << "\t(line" << ((*it) + 1) << ") " << file.text_line(*it) << endl;
     }
 }
 
-// Ö÷º¯Êı
+// ä¸»å‡½æ•°
 int main() {
-    string filename = open_file_dialog();  // ´ò¿ªÎÄ¼şÑ¡Ôñ¶Ô»°¿ò£¬»ñÈ¡ÎÄ¼şÂ·¾¶
-    if (filename.empty()) {  // Èç¹ûÃ»ÓĞÑ¡ÔñÎÄ¼ş£¬Êä³ö´íÎóĞÅÏ¢
+    string filename = open_file_dialog();  // æ‰“å¼€æ–‡ä»¶é€‰æ‹©å¯¹è¯æ¡†ï¼Œè·å–æ–‡ä»¶è·¯å¾„
+    if (filename.empty()) {  // å¦‚æœæ²¡æœ‰é€‰æ‹©æ–‡ä»¶ï¼Œè¾“å‡ºé”™è¯¯ä¿¡æ¯å¹¶é€€å‡º
         cerr << "No file selected!" << endl;
         return EXIT_FAILURE;
     }
 
-    wifstream infile(filename);  // Ê¹ÓÃ wifstream ¶ÁÈ¡ÎÄ¼ş
-    infile.imbue(locale("en_US.UTF-8"));  // ÉèÖÃÎÄ¼şÎª UTF-8 ±àÂë
-    if (!infile) {  // Èç¹ûÎÄ¼ş´ò¿ªÊ§°Ü£¬Êä³ö´íÎóĞÅÏ¢
+    wifstream infile(filename);  // ä½¿ç”¨ wifstream è¯»å–æ–‡ä»¶
+    infile.imbue(locale("en_US.UTF-8"));  // è®¾ç½®æ–‡ä»¶ä¸º UTF-8 ç¼–ç 
+    if (!infile) {  // å¦‚æœæ–‡ä»¶æ‰“å¼€å¤±è´¥ï¼Œè¾“å‡ºé”™è¯¯ä¿¡æ¯å¹¶é€€å‡º
         cerr << "Failed to open file!" << endl;
         return EXIT_FAILURE;
     }
 
-    TextQuery tq;  // ´´½¨ TextQuery ¶ÔÏó
-    tq.read_file(infile);  // ¶ÁÈ¡ÎÄ¼şÄÚÈİ
+    TextQuery tq;  // åˆ›å»º TextQuery å¯¹è±¡
+    tq.read_file(infile);  // è¯»å–æ–‡ä»¶å†…å®¹
 
     while (true) {
-        cout << "Enter word to look for, or q to quit: ";
+        cout << "Enter word to look for, or q to quit: ";  // æç¤ºç”¨æˆ·è¾“å…¥æŸ¥è¯¢å•è¯
         string s;
-        cin >> s;  // »ñÈ¡ÓÃ»§ÊäÈëµÄ²éÑ¯µ¥´Ê
-        if (!cin || s == "q") break;  // Èç¹ûÓÃ»§ÊäÈë "q" »òÓöµ½ÊäÈëÁ÷´íÎó£¬ÔòÍË³ö
-        set<TextQuery::line_no> locs = tq.run_query(s);  // ²éÕÒµ¥´Ê³öÏÖµÄĞĞºÅ
-        print_results(locs, s, tq);  // ´òÓ¡²éÑ¯½á¹û
+        cin >> s;  // è·å–ç”¨æˆ·è¾“å…¥çš„æŸ¥è¯¢å•è¯
+        if (!cin || s == "q") break;  // å¦‚æœç”¨æˆ·è¾“å…¥ "q" æˆ–é‡åˆ°è¾“å…¥æµé”™è¯¯ï¼Œåˆ™é€€å‡º
+        set<TextQuery::line_no> locs = tq.run_query(s);  // æŸ¥æ‰¾å•è¯å‡ºç°çš„è¡Œå·
+        print_results(locs, s, tq);  // æ‰“å°æŸ¥è¯¢ç»“æœ
     }
 
-    return 0;  // ³ÌĞòÕı³£ÍË³ö
+    return 0;  // ç¨‹åºæ­£å¸¸é€€å‡º
 }
