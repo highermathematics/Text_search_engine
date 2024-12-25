@@ -175,9 +175,12 @@ int main() {
         cout << "Enter word to look for, or !q to quit: ";  // 提示用户输入查询单词
         string s;
         cin >> s;  // 获取用户输入的查询单词
-        if (!cin || s == "!q") break;  // 如果用户输入 "!q" 或遇到输入流错误，则退出
+        if (!cin || s == "!q") break;  // 如果用户输入 "q" 或遇到输入流错误，则退出
         set<TextQuery::line_no> locs = tq.run_query(s);  // 查找单词出现的行号
         print_results(locs, s, tq);  // 打印查询结果
+
+        system("pause");
+        system("cls");
     }
 
     return 0;  // 程序正常退出
